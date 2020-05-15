@@ -49,3 +49,11 @@ public struct NestedPublished<Value: ObservableObject> where Value.ObjectWillCha
         }
     }
 }
+
+/// Force NestedPublished when using ObservableObjects
+@available(iOS 13.0, *)
+extension Published where Value: ObservableObject {
+    public init(wrappedValue: Value) {
+        assert("Use NestedPublished with ObservableObjects")
+    }
+}

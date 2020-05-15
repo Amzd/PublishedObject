@@ -54,6 +54,6 @@ public struct NestedPublished<Value: ObservableObject> where Value.ObjectWillCha
 @available(iOS 13.0, *)
 extension Published where Value: ObservableObject {
     public init(wrappedValue: Value) {
-        assert("Use NestedPublished with ObservableObjects")
+        fatalError("Use NestedPublished with ObservableObjects")
     }
 }

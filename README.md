@@ -36,3 +36,5 @@ func example() {
     outer.innerPublished.value = 3        // outer.objectWillChange will NOT be called 
 }
 ```
+
+It's only one file so you could just copy it. Also has Swift Package Manager support.

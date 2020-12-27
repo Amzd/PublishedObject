@@ -1,3 +1,5 @@
+import Combine
+
 /// Just like @Published this sends willSet events to the enclosing ObservableObject's ObjectWillChangePublisher
 /// but unlike @Published it also sends the wrapped value's published changes on to the enclosing ObservableObject
 @propertyWrapper @available(iOS 13.0, *)

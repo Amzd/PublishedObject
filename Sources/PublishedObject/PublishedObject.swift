@@ -2,8 +2,8 @@ import Combine
 
 /// Just like @Published this sends willSet events to the enclosing ObservableObject's ObjectWillChangePublisher
 /// but unlike @Published it also sends the wrapped value's published changes on to the enclosing ObservableObject
-@propertyWrapper @available(iOS 13.0, *)
-public struct NestedPublished<Value: ObservableObject> where Value.ObjectWillChangePublisher == ObservableObjectPublisher {
+@propertyWrapper @available(iOS 13.0, OSX 10.15, tvOS 13.0, watchOS 6.0, *)
+public struct PublishedObject<Value: ObservableObject> where Value.ObjectWillChangePublisher == ObservableObjectPublisher {
 
     public init(wrappedValue: Value) {
         self.wrappedValue = wrappedValue
@@ -19,7 +19,7 @@ public struct NestedPublished<Value: ObservableObject> where Value.ObjectWillCha
     public static subscript<EnclosingSelf: ObservableObject>(
         _enclosingInstance observed: EnclosingSelf,
         wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Value>,
-        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, NestedPublished>
+        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, PublishedObject>
     ) -> Value where EnclosingSelf.ObjectWillChangePublisher == ObservableObjectPublisher {
         get {
             observed[keyPath: storageKeyPath].setParent(observed)
@@ -53,7 +53,7 @@ public struct NestedPublished<Value: ObservableObject> where Value.ObjectWillCha
 }
 
 /// Force NestedPublished when using ObservableObjects
-@available(iOS 13.0, *)
+@available(iOS 13.0, OSX 10.15, tvOS 13.0, watchOS 6.0, *)
 extension Published where Value: ObservableObject {
     public init(wrappedValue: Value) {
         fatalError("Use NestedPublished with ObservableObjects")

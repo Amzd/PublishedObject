@@ -1,4 +1,4 @@
-# NestedPublished
+# PublishedObject
 
 A property wrapper that forwards the objectWillChange of the wrapped ObservableObject to the enclosing ObservableObject's objectWillChange.
 
@@ -7,11 +7,11 @@ Just like @Published this sends willSet events to the enclosing ObservableObject
 
 ```swift
 class Outer: ObservableObject {
-    @NestedPublished var innerNestedPublished: Inner
+    @PublishedObject var innerPublishedObject: Inner
     @Published var innerPublished: Inner
 
     init(_ value: Int) {
-        self.innerNestedPublished = Inner(value)
+        self.innerPublishedObject = Inner(value)
         self.innerPublished = Inner(value)
     }
 }
@@ -27,12 +27,12 @@ class Inner: ObservableObject {
 func example() {
     let outer = Outer(1)
     
-    // Setting property on Outer (This will send an update with either @Published or @NestedPublished)
-    outer.innerNestedPublished = Inner(2) // outer.objectWillChange will be called 
+    // Setting property on Outer (This will send an update with either @Published or @PublishedObject)
+    outer.innerPublishedObject = Inner(2) // outer.objectWillChange will be called 
     outer.innerPublished = Inner(2)       // outer.objectWillChange will be called
 
-    // Setting property on Inner (This will only send an update when using @NestedPublished)
-    outer.innerNestedPublished.value = 3  // outer.objectWillChange will be called !!!
+    // Setting property on Inner (This will only send an update when using @PublishedObject)
+    outer.innerPublishedObject.value = 3  // outer.objectWillChange will be called !!!
     outer.innerPublished.value = 3        // outer.objectWillChange will NOT be called 
 }
 ```

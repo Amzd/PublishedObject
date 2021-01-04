@@ -1,4 +1,5 @@
 import Combine
+import Foundation
 
 /// Just like @Published this sends willSet events to the enclosing ObservableObject's ObjectWillChangePublisher
 /// but unlike @Published it also sends the wrapped value's published changes on to the enclosing ObservableObject
@@ -30,6 +31,17 @@ public struct PublishedObject<Value: ObservableObject> where Value.ObjectWillCha
             observed[keyPath: storageKeyPath].wrappedValue = newValue
         }
     }
+    
+    public static subscript<EnclosingSelf: ObservableObject>(
+        _enclosingInstance observed: EnclosingSelf,
+        projected wrappedKeyPath: KeyPath<EnclosingSelf, Publisher>,
+        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, PublishedObject>
+    ) -> Publisher where EnclosingSelf.ObjectWillChangePublisher == ObservableObjectPublisher {
+        get {
+            observed[keyPath: storageKeyPath].setParent(observed)
+            return observed[keyPath: storageKeyPath].projectedValue
+        }
+    }
 
     private let parent = Holder()
     private var cancellable: AnyCancellable?
@@ -38,7 +50,7 @@ public struct PublishedObject<Value: ObservableObject> where Value.ObjectWillCha
         init() {}
     }
     
-    private mutating func setParent<Parent: ObservableObject>(_ parentObject: Parent) where Parent.ObjectWillChangePublisher == ObservableObjectPublisher {
+    private func setParent<Parent: ObservableObject>(_ parentObject: Parent) where Parent.ObjectWillChangePublisher == ObservableObjectPublisher {
         guard parent.objectWillChange == nil else { return }
         parent.objectWillChange = { [weak parentObject] in
             parentObject?.objectWillChange.send()
@@ -46,9 +58,21 @@ public struct PublishedObject<Value: ObservableObject> where Value.ObjectWillCha
     }
     
     private mutating func startListening(to wrappedValue: Value) {
+        let publisher = _projectedValue
         cancellable = wrappedValue.objectWillChange.sink { [parent] in
             parent.objectWillChange?()
+            DispatchQueue.main.async {
+                publisher.send(wrappedValue)
+            }
         }
+        publisher.send(wrappedValue)
+    }
+    
+    public typealias Publisher = AnyPublisher<Value, Never>
+    
+    private lazy var _projectedValue = CurrentValueSubject<Value, Never>(wrappedValue)
+    public var projectedValue: Publisher {
+        mutating get { _projectedValue.eraseToAnyPublisher() }
     }
 }
 

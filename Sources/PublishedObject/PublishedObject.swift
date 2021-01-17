@@ -1,3 +1,6 @@
+// https://github.com/Amzd/PublishedObject
+// https://twitter.com/Amzdme
+
 import Combine
 import Foundation
 

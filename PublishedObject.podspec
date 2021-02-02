@@ -7,9 +7,9 @@ Pod::Spec.new do |s|
   s.author           = { 'Casper Zandbergen' => 'info@casperzandbergen.nl' }
   s.source           = { :git => 'https://github.com/Amzd/PublishedObject.git', :tag => s.version.to_s }
 
-  s.source_files = 'Sources/**/*.swift'
+  s.source_files = 'Sources/PublishedObject/*.swift'
  
-  s.swift_version = '5.1'
+  s.swift_version = '5.2'
   s.ios.deployment_target = '11.0'
   s.tvos.deployment_target = '11.0'
   s.osx.deployment_target = '10.13'

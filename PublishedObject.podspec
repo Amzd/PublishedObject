@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'PublishedObject'
-  s.version          = '0.1.4'
+  s.version          = '0.1.5'
   s.license          = { type: 'MIT' }
   s.summary          = 'A property wrapper that forwards the objectWillChange of the wrapped ObservableObject to the enclosing ObservableObjects objectWillChange.'
   s.homepage         = 'https://github.com/Amzd/PublishedObject'

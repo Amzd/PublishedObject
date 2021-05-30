@@ -7,11 +7,39 @@ import Foundation
 /// Just like @Published this sends willSet events to the enclosing ObservableObject's ObjectWillChangePublisher
 /// but unlike @Published it also sends the wrapped value's published changes on to the enclosing ObservableObject
 @propertyWrapper @available(iOS 13.0, OSX 10.15, tvOS 13.0, watchOS 6.0, *)
-public struct PublishedObject<Value: ObservableObject> where Value.ObjectWillChangePublisher == ObservableObjectPublisher {
+public struct PublishedObject<Value> {
 
-    public init(wrappedValue: Value) {
+    public init(wrappedValue: Value) where Value: ObservableObject, Value.ObjectWillChangePublisher == ObservableObjectPublisher {
         self.wrappedValue = wrappedValue
         self.cancellable = nil
+        _startListening = { futureSelf, wrappedValue in
+            let publisher = futureSelf._projectedValue
+            let parent = futureSelf.parent
+            futureSelf.cancellable = wrappedValue.objectWillChange.sink { [parent] in
+                parent.objectWillChange?()
+                DispatchQueue.main.async {
+                    publisher.send(wrappedValue)
+                }
+            }
+            publisher.send(wrappedValue)
+        }
+        startListening(to: wrappedValue)
+    }
+    
+    public init<V>(wrappedValue: V?) where V? == Value, V: ObservableObject, V.ObjectWillChangePublisher == ObservableObjectPublisher {
+        self.wrappedValue = wrappedValue
+        self.cancellable = nil
+        _startListening = { futureSelf, wrappedValue in
+            let publisher = futureSelf._projectedValue
+            let parent = futureSelf.parent
+            futureSelf.cancellable = wrappedValue?.objectWillChange.sink { [parent] in
+                parent.objectWillChange?()
+                DispatchQueue.main.async {
+                    publisher.send(wrappedValue)
+                }
+            }
+            publisher.send(wrappedValue)
+        }
         startListening(to: wrappedValue)
     }
 
@@ -60,15 +88,9 @@ public struct PublishedObject<Value: ObservableObject> where Value.ObjectWillCha
         }
     }
     
+    private var _startListening: (inout Self, _ toValue: Value) -> Void
     private mutating func startListening(to wrappedValue: Value) {
-        let publisher = _projectedValue
-        cancellable = wrappedValue.objectWillChange.sink { [parent] in
-            parent.objectWillChange?()
-            DispatchQueue.main.async {
-                publisher.send(wrappedValue)
-            }
-        }
-        publisher.send(wrappedValue)
+        _startListening(&self, wrappedValue)
     }
     
     public typealias Publisher = AnyPublisher<Value, Never>

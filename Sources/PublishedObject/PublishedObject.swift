@@ -68,10 +68,8 @@ public struct PublishedObject<Value> {
         projected wrappedKeyPath: KeyPath<EnclosingSelf, Publisher>,
         storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, PublishedObject>
     ) -> Publisher where EnclosingSelf.ObjectWillChangePublisher == ObservableObjectPublisher {
-        get {
-            observed[keyPath: storageKeyPath].setParent(observed)
-            return observed[keyPath: storageKeyPath].projectedValue
-        }
+        observed[keyPath: storageKeyPath].setParent(observed)
+        return observed[keyPath: storageKeyPath].projectedValue
     }
 
     private let parent = Holder()

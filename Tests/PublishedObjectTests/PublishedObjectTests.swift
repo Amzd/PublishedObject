@@ -34,12 +34,23 @@ class OuterOptional: ObservableObject {
 }
 
 @available(iOS 13.0, OSX 10.15, tvOS 13.0, watchOS 6.0, *)
+class OuterArray: ObservableObject {
+    @PublishedObject var innerPublishedObject: [Inner]
+    @Published var innerPublished: [Inner]
+
+    init(_ value: Int) {
+        self.innerPublishedObject = [Inner(value)]
+        self.innerPublished = [Inner(value)]
+    }
+}
+
+@available(iOS 13.0, OSX 10.15, tvOS 13.0, watchOS 6.0, *)
 final class PublishedObjectTests: XCTestCase {
     var cancellables: Set<AnyCancellable> = []
-    
-    func testObjectWillChange() throws {
-        let outer = Outer(1)
-        
+
+    var outer: Outer! = Outer(1)
+
+    func testObjectWillChange() {
         // Setting property on Outer (This will send an update with either @Published or @PublishedObject)
 
         let exp1 = XCTestExpectation(description: "outer.objectWillChange will be called")
@@ -66,11 +77,10 @@ final class PublishedObjectTests: XCTestCase {
         wait(for: [exp4], timeout: 0.1)
     }
     
-    func testProjectedValue() throws {
-        let outer = Outer(1)
-        
+    func testProjectedValue() {
+
         // Initial value
-        
+
         let exp0 = XCTestExpectation(description: "projectedValue will be called")
         outer.$innerPublishedObject.first().sink { inner in
             if inner.value == 1 {
@@ -216,10 +226,116 @@ final class PublishedObjectTests: XCTestCase {
         wait(for: [exp4], timeout: 0.1)
     }
 
+    func testArrayObjectWillChange() {
+        let outer = OuterArray(1)
+
+        // Setting property on Outer (This will send an update with either @Published or @PublishedObject)
+
+        let exp1 = XCTestExpectation(description: "outer.objectWillChange will be called")
+        outer.objectWillChange.first().sink { exp1.fulfill() } .store(in: &cancellables)
+        outer.innerPublishedObject = [Inner(2)]
+        wait(for: [exp1], timeout: 0.1)
+
+        let exp2 = XCTestExpectation(description: "outer.objectWillChange will be called")
+        outer.objectWillChange.first().sink { exp2.fulfill() } .store(in: &cancellables)
+        outer.innerPublished = [Inner(2)]
+        wait(for: [exp2], timeout: 0.1)
+
+        // Setting property on Inner (This will only send an update when using @PublishedObject)
+
+        let exp3 = XCTestExpectation(description: "outer.objectWillChange will be called")
+        outer.objectWillChange.first().sink { exp3.fulfill() } .store(in: &cancellables)
+        outer.innerPublishedObject[0].value = 3
+        wait(for: [exp3], timeout: 0.1)
+
+        let exp4 = XCTestExpectation(description: "outer.objectWillChange will NOT be called")
+        exp4.isInverted = true
+        outer.objectWillChange.first().sink { exp4.fulfill() } .store(in: &cancellables)
+        outer.innerPublished[0].value = 3
+        wait(for: [exp4], timeout: 0.1)
+    }
+
+    func testArrayProjectedValue() {
+        let outer = OuterArray(1)
+
+        // Initial value
+
+        let exp0 = XCTestExpectation(description: "projectedValue will be called")
+        outer.$innerPublishedObject.compactMap(\.first).first().sink { inner in
+            if inner.value == 1 {
+                exp0.fulfill()
+            }
+        }.store(in: &cancellables)
+        wait(for: [exp0], timeout: 0.1)
+
+        let exp1 = XCTestExpectation(description: "projectedValue will be called")
+        outer.$innerPublished.compactMap(\.first).first().sink { inner in
+            if inner.value == 1 {
+                exp1.fulfill()
+            }
+        }.store(in: &cancellables)
+        wait(for: [exp1], timeout: 0.1)
+
+
+        // Setting property on Outer (This will send an update with either @Published or @PublishedObject)
+
+        let exp2 = XCTestExpectation(description: "projectedValue will be called")
+        outer.$innerPublishedObject.compactMap(\.first).dropFirst().first().sink { inner in
+            if inner.value == 2 {
+                exp2.fulfill()
+            }
+        }.store(in: &cancellables)
+        outer.innerPublishedObject[0] = Inner(2)
+        wait(for: [exp2], timeout: 0.1)
+
+        let exp3 = XCTestExpectation(description: "projectedValue will be called")
+        outer.$innerPublished.compactMap(\.first).dropFirst().first().sink { inner in
+            if inner.value == 2 {
+                exp3.fulfill()
+            }
+        }.store(in: &cancellables)
+        outer.innerPublished[0] = Inner(2)
+        wait(for: [exp3], timeout: 0.1)
+
+        // Setting property on Inner (This will only send an update when using @PublishedObject)
+
+        let exp4 = XCTestExpectation(description: "projectedValue will be called")
+        outer.$innerPublishedObject.compactMap(\.first).dropFirst().first().sink { inner in
+            if inner.value == 3 {
+                exp4.fulfill()
+            }
+        }.store(in: &cancellables)
+        outer.innerPublishedObject[0].value = 3
+        wait(for: [exp4], timeout: 0.1)
+
+        let exp5 = XCTestExpectation(description: "projectedValue will NOT be called")
+        exp5.isInverted = true
+        outer.$innerPublished.compactMap(\.first).dropFirst().first().sink { inner in
+            if inner.value == 3 {
+                exp5.fulfill()
+            }
+        }.store(in: &cancellables)
+        outer.innerPublished[0].value = 3
+        wait(for: [exp5], timeout: 0.1)
+    }
+
+    func testMemoryLeak() {
+        weak var weakOuter = outer
+        testObjectWillChange()
+        outer = nil
+        XCTAssertNil(weakOuter)
+        outer = Outer(1)
+        weakOuter = outer
+        testProjectedValue()
+        outer = nil
+        XCTAssertNil(weakOuter)
+    }
+
     static var allTests = [
         ("testObjectWillChange", testObjectWillChange),
         ("testProjectedValue", testProjectedValue),
         ("testOptionalWithValue", testOptionalWithValue),
         ("testOptionalWithoutValue", testOptionalWithoutValue),
+        ("testMemoryLeak", testMemoryLeak),
     ]
 }

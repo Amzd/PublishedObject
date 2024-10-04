@@ -43,6 +43,25 @@ public struct PublishedObject<Value> {
         startListening(to: wrappedValue)
     }
 
+    public init<V>(wrappedValue: Value) where Value == [V], V: ObservableObject, V.ObjectWillChangePublisher == ObservableObjectPublisher {
+        self.wrappedValue = wrappedValue
+        self.cancellable = nil
+        _startListening = { futureSelf, wrappedValue in
+            let publisher = futureSelf._projectedValue
+            let parent = futureSelf.parent
+            for element in wrappedValue {
+                futureSelf.cancellable = element.objectWillChange.sink { [parent] in
+                    parent.objectWillChange?()
+                    DispatchQueue.main.async {
+                        publisher.send(wrappedValue)
+                    }
+                }
+            }
+            publisher.send(wrappedValue)
+        }
+        startListening(to: wrappedValue)
+    }
+
     public var wrappedValue: Value {
         willSet { parent.objectWillChange?() }
         didSet { startListening(to: wrappedValue) }

@@ -121,9 +121,22 @@ public struct PublishedObject<Value> {
 #if FORCE_PUBLISHED_OBJECT_WRAPPER
 /// Force PublishedObject when using ObservableObjects
 @available(iOS 13.0, OSX 10.15, tvOS 13.0, watchOS 6.0, *)
-extension Published where Value: ObservableObject {
-    public init(wrappedValue: Value) {
-        fatalError("Use PublishedObject with ObservableObjects")
+extension Published {
+    public init(wrappedValue: Value) where Value: ObservableObject {
+        fatalError("Use @PublishedObject with ObservableObjects")
+    }
+    public init(wrappedValue: Value) where Value: _PublishedObjectInternalObservableObjectOptional {
+        fatalError("Use @PublishedObject with optional ObservableObjects")
+    }
+    public init(wrappedValue: Value) where Value: _PublishedObjectInternalObservableObjectArray {
+        fatalError("Use @PublishedObject with arrays of ObservableObjects")
     }
 }
+
+public protocol _PublishedObjectInternalObservableObjectOptional {}
+@available(iOS 13.0, OSX 10.15, tvOS 13.0, watchOS 6.0, *)
+extension Optional: _PublishedObjectInternalObservableObjectOptional where Wrapped: ObservableObject {}
+public protocol _PublishedObjectInternalObservableObjectArray {}
+@available(iOS 13.0, OSX 10.15, tvOS 13.0, watchOS 6.0, *)
+extension Array: _PublishedObjectInternalObservableObjectArray where Element: ObservableObject {}
 #endif
